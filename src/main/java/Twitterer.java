@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.ArrayWritable;
@@ -20,11 +21,13 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 public class Twitterer {
     
-    private static class TextArrayWritable extends ArrayWritable {
+    public static class TextArrayWritable extends ArrayWritable {
 	public TextArrayWritable(Text[] values) {
 	    super(Text.class, values);
 	}
-
+	public TextArrayWritable() {
+	    super(Text.class);
+	}
 	@Override
 	public Text[] get() {
 	    return (Text[]) super.get();
@@ -39,7 +42,7 @@ public class Twitterer {
     /**
      * Map each record "'A' \t 'B' \n" into <'A',['A','B']> and <'B','A'>
      */
-    private static class TokenizerMapper extends Mapper<Object, Text, Text, TextArrayWritable>{
+    public static class TokenizerMapper extends Mapper<Object, Text, Text, TextArrayWritable>{
 	
 	private final Text userID = new Text();
 	private final Text followerID = new Text();
@@ -78,7 +81,7 @@ public class Twitterer {
      * Map each records {<'A',['A','B']>, <'A',['A','D']>, <'A',['C']>} to
      *			{<'A',['B','D']>, <'C',['B','D']>}
      */
-    private static class FollowerReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
+    public static class FollowerReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
 	Set<Text> followerIDSet = new HashSet<>();
 	Set<Text> userIDSet = new HashSet<>();
 	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
@@ -106,7 +109,7 @@ public class Twitterer {
 	}
     }
     
-    private static class AggregatorReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
+    public static class AggregatorReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
 	Set<Text> followerIDSet = new HashSet<>();
 	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
 	
@@ -132,6 +135,7 @@ public class Twitterer {
     public static void main(String[] args) throws Exception {
 	// Job 1, TokennizerMapper -> FollowerReducer
 	Configuration conf = new Configuration();
+	FileSystem hdfs = FileSystem.get(conf);
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class);
 	job1.setMapperClass(TokenizerMapper.class);
@@ -140,6 +144,7 @@ public class Twitterer {
 	job1.setOutputValueClass(TextArrayWritable.class);
 	
 	Path in = new Path(args[0]); Path out = new Path(args[0] + "/1");
+	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job1, in);
 	SequenceFileOutputFormat.setOutputPath(job1, out);
 	job1.waitForCompletion(true);
@@ -153,8 +158,9 @@ public class Twitterer {
 	job2.setOutputValueClass(TextArrayWritable.class);
 	
 	in = out; out = new Path(args[0] + "/2");
+	if(hdfs.exists(out)) hdfs.delete(out, true);
 	SequenceFileInputFormat.addInputPath(job2, in);
-	SequenceFileOutputFormat.setOutputPath(job2, out);
+	FileOutputFormat.setOutputPath(job2, out);
 	job2.waitForCompletion(true);
 	
     }
