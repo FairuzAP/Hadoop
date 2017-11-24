@@ -143,7 +143,7 @@ public class Twitterer {
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class);
 	job1.setMapperClass(TokenizerMapper.class);
-	job1.setReducerClass(FollowerReducer.class);
+	job1.setNumReduceTasks(0);
 	job1.setOutputKeyClass(Text.class);
 	job1.setOutputValueClass(TextArrayWritable.class);
 	
