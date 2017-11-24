@@ -177,20 +177,22 @@ public class Twitterer {
     }
     
     public static class Top10Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+	private final Text userID = new Text();
 	private final IntWritable followerCount = new IntWritable();
-	private final PriorityQueue<Tuple<Text, Integer>> topUser = new PriorityQueue<>((Tuple<Text, Integer> o1, Tuple<Text, Integer> o2) -> o2.y.compareTo(o1.y));	
+	private final PriorityQueue<Tuple<String, Integer>> topUser = new PriorityQueue<>((Tuple<String, Integer> o1, Tuple<String, Integer> o2) -> o2.y.compareTo(o1.y));	
 	
 	@Override
 	public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
-	    topUser.add(new Tuple<>(key, values.iterator().next().get()));
+	    topUser.add(new Tuple<>(key.toString(), values.iterator().next().get()));
 	}
 	
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
 	    for(int i=0; i<topRetrieved; i++) {
-		Tuple<Text, Integer> next = topUser.remove();
+		Tuple<String, Integer> next = topUser.remove();
 		followerCount.set(next.y);
-		context.write(next.x, followerCount);
+		userID.set(next.x);
+		context.write(userID, followerCount);
 	    }
 	}
     }
@@ -204,7 +206,7 @@ public class Twitterer {
 	job1.setJarByClass(Twitterer.class); job1.setMapperClass(TokenizerMapper.class); job1.setReducerClass(FollowerReducer.class);
 	job1.setOutputFormatClass(SequenceFileOutputFormat.class); job1.setOutputKeyClass(Text.class); job1.setOutputValueClass(TextArrayWritable.class);
 	
-	Path in = new Path(args[0] + "/0"); Path out = new Path(args[0] + "/1");
+	Path in = new Path(args[0]); Path out = new Path(args[1] + "/1");
 	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job1, in); FileOutputFormat.setOutputPath(job1, out);
 	job1.waitForCompletion(true);
@@ -216,7 +218,7 @@ public class Twitterer {
 	job2.setInputFormatClass(SequenceFileInputFormat.class);
 	job2.setOutputFormatClass(SequenceFileOutputFormat.class); job2.setOutputKeyClass(Text.class); job2.setOutputValueClass(TextArrayWritable.class);
 	
-	in = new Path(args[0] + "/1"); out = new Path(args[0] + "/2");
+	in = new Path(args[1] + "/1"); out = new Path(args[1] + "/2");
 	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job2, in); FileOutputFormat.setOutputPath(job2, out);
 	job2.waitForCompletion(true);
@@ -225,11 +227,11 @@ public class Twitterer {
 	conf = new Configuration();
 	Job job3 = Job.getInstance(conf, "job_3_13514104");
 	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(Top10Reducer.class);
-	job3.setNumReduceTasks(0);
+	job3.setNumReduceTasks(1);
 	job3.setInputFormatClass(SequenceFileInputFormat.class);
 	job3.setOutputKeyClass(Text.class); job3.setOutputValueClass(IntWritable.class);
 	
-	in = new Path(args[0] + "/2"); out = new Path(args[0] + "/3");
+	in = new Path(args[1] + "/2"); out = new Path(args[1] + "/3");
 	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job3, in); FileOutputFormat.setOutputPath(job3, out);
 	job3.waitForCompletion(true);
