@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 public class Twitterer {
     
-    public static final int topRetrieved = 2;
+    public static final int topRetrieved = 10;
     public static class Tuple<X, Y> { 
 	public final X x; 
 	public final Y y; 
@@ -179,19 +179,21 @@ public class Twitterer {
     public static class Top10Reducer extends Reducer<Text, IntWritable, Text, IntWritable> {
 	private final Text userID = new Text();
 	private final IntWritable followerCount = new IntWritable();
-	private final PriorityQueue<Tuple<String, Integer>> topUser = new PriorityQueue<>((Tuple<String, Integer> o1, Tuple<String, Integer> o2) -> o2.y.compareTo(o1.y));	
+	private final PriorityQueue<Tuple<String, Integer>> topUser = new PriorityQueue<>((Tuple<String, Integer> o1, Tuple<String, Integer> o2) -> o1.y.compareTo(o2.y));	
 	
 	@Override
 	public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
 	    topUser.add(new Tuple<>(key.toString(), values.iterator().next().get()));
+	    if(topUser.size() > topRetrieved) {
+		topUser.remove();
+	    }
 	}
 	
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
-	    for(int i=0; i<topRetrieved; i++) {
-		Tuple<String, Integer> next = topUser.remove();
-		followerCount.set(next.y);
-		userID.set(next.x);
+	    for(Tuple<String, Integer> val : topUser) {
+		followerCount.set(val.y);
+		userID.set(val.x);
 		context.write(userID, followerCount);
 	    }
 	}
