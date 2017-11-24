@@ -153,13 +153,14 @@ public class Twitterer {
     }
     
     public static class CounterMapper extends Mapper<Text, TextArrayWritable, Text, IntWritable> {
+	private final Text userID = new Text();
 	private final IntWritable followerCount = new IntWritable();
-	private final PriorityQueue<Tuple<Text, Integer>> topUser = new PriorityQueue<>((Tuple<Text, Integer> o1, Tuple<Text, Integer> o2) -> o1.y.compareTo(o2.y));	
+	private final PriorityQueue<Tuple<String, Integer>> topUser = new PriorityQueue<>((Tuple<String, Integer> o1, Tuple<String, Integer> o2) -> o1.y.compareTo(o2.y));	
 	
 	@Override
 	public void map(Text key, TextArrayWritable value, Context context) throws IOException, InterruptedException {
 	    Text[] followerIDArr = value.get();
-	    topUser.add(new Tuple<>(key, followerIDArr.length));
+	    topUser.add(new Tuple<>(key.toString(), followerIDArr.length));
 	    if(topUser.size() > topRetrieved) {
 		topUser.remove();
 	    }
@@ -167,9 +168,10 @@ public class Twitterer {
 	
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
-	    for(Tuple<Text, Integer> val : topUser) {
+	    for(Tuple<String, Integer> val : topUser) {
 		followerCount.set(val.y);
-		context.write(val.x, followerCount);
+		userID.set(val.x);
+		context.write(userID, followerCount);
 	    }
 	}
     }
