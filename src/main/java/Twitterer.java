@@ -219,10 +219,10 @@ public class Twitterer {
 	FileInputFormat.addInputPath(job2, in); FileOutputFormat.setOutputPath(job2, out);
 	job2.waitForCompletion(true);
 	
-	// Job 3, CounterMapper -> FollowerReducer
+	// Job 3, CounterMapper -> Top10Reducer
 	conf = new Configuration();
 	Job job3 = Job.getInstance(conf, "job_3_13514104");
-	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(FollowerReducer.class);
+	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(Top10Reducer.class);
 	job3.setNumReduceTasks(1);
 	job3.setInputFormatClass(SequenceFileInputFormat.class);
 	job3.setOutputKeyClass(Text.class); job3.setOutputValueClass(IntWritable.class);
