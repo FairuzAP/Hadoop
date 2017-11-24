@@ -138,7 +138,6 @@ public class Twitterer {
 	job1.setJarByClass(Twitterer.class);
 	job1.setMapperClass(TokenizerMapper.class);
 	job1.setReducerClass(FollowerReducer.class);
-	job1.setInputFormatClass(FileInputFormat.class);
 	job1.setOutputFormatClass(SequenceFileOutputFormat.class);
 	job1.setOutputKeyClass(Text.class);
 	job1.setOutputValueClass(TextArrayWritable.class);
@@ -155,7 +154,6 @@ public class Twitterer {
 	job2.setJarByClass(Twitterer.class);
 	job2.setReducerClass(AggregatorReducer.class);
 	job1.setInputFormatClass(SequenceFileInputFormat.class);
-	job1.setOutputFormatClass(FileOutputFormat.class);
 	job2.setOutputKeyClass(Text.class);
 	job2.setOutputValueClass(TextArrayWritable.class);
 	
