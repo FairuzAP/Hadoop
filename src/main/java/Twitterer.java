@@ -24,7 +24,7 @@ import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 public class Twitterer {
     
-    public static final int topRetrieved = 1;
+    public static final int topRetrieved = 2;
     public static class Tuple<X, Y> { 
 	public final X x; 
 	public final Y y; 
@@ -223,7 +223,7 @@ public class Twitterer {
 	conf = new Configuration();
 	Job job3 = Job.getInstance(conf, "job_3_13514104");
 	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(Top10Reducer.class);
-	job3.setNumReduceTasks(1);
+	job3.setNumReduceTasks(0);
 	job3.setInputFormatClass(SequenceFileInputFormat.class);
 	job3.setOutputKeyClass(Text.class); job3.setOutputValueClass(IntWritable.class);
 	
