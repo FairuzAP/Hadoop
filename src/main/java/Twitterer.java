@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.ArrayWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -26,9 +27,16 @@ public class Twitterer {
 	public TextArrayWritable() {
 	    super(Text.class);
 	}
+	
 	@Override
 	public Text[] get() {
-	    return (Text[]) super.get();
+	    Writable[] values = super.get();
+	    Text[] res = new Text[values.length];
+	    for(int i=0; i<values.length; i++) {
+		Text text = (Text)values[i];  // cast
+		res[i] = text;
+	    }
+	    return res;
 	}
 	@Override
 	public String toString() {
@@ -144,6 +152,22 @@ public class Twitterer {
 	FileInputFormat.addInputPath(job1, in);
 	FileOutputFormat.setOutputPath(job1, out);
 	job1.waitForCompletion(true);
+	
+//	// Jon 2, IdentityMapper -> AggregatorReducer
+//	conf = new Configuration();
+//	Job job2 = Job.getInstance(conf, "job_2_13514104");
+//	job2.setJarByClass(Twitterer.class);
+//	job2.setReducerClass(AggregatorReducer.class);
+//	job1.setInputFormatClass(SequenceFileInputFormat.class);
+//	job2.setOutputKeyClass(Text.class);
+//	job2.setOutputValueClass(TextArrayWritable.class);
+//	
+//	in = new Path(args[0] + "/1"); out = new Path(args[0] + "/2");
+//	if(hdfs.exists(out)) hdfs.delete(out, true);
+//	SequenceFileInputFormat.addInputPath(job2, in);
+//	FileOutputFormat.setOutputPath(job2, out);
+//	job2.waitForCompletion(true);
+	
     }
 }
 
