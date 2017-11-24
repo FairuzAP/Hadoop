@@ -161,7 +161,7 @@ public class Twitterer {
 	Job job2 = Job.getInstance(conf, "job_2_13514104");
 	job2.setJarByClass(Twitterer.class);
 	job2.setReducerClass(AggregatorReducer.class);
-	job1.setInputFormatClass(SequenceFileInputFormat.class);
+	job2.setInputFormatClass(SequenceFileInputFormat.class);
 	job2.setOutputKeyClass(Text.class);
 	job2.setOutputValueClass(TextArrayWritable.class);
 	
