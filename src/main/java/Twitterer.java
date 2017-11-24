@@ -168,7 +168,8 @@ public class Twitterer {
 	
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
-	    for(Tuple<String, Integer> val : topUser) {
+	    while(topUser.size() > 0) {
+		Tuple<String, Integer> val = topUser.remove();
 		followerCount.set(val.y);
 		userID.set(val.x);
 		context.write(userID, followerCount);
@@ -191,7 +192,8 @@ public class Twitterer {
 	
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
-	    for(Tuple<String, Integer> val : topUser) {
+	    while(topUser.size() > 0) {
+		Tuple<String, Integer> val = topUser.remove();
 		followerCount.set(val.y);
 		userID.set(val.x);
 		context.write(userID, followerCount);
