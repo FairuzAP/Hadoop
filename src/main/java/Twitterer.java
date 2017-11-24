@@ -74,10 +74,9 @@ public class Twitterer {
 
 		    followerIDArrWritable.set(followerIDArr2);
 		    context.write(userID, followerIDArrWritable);
-
-		    userID.set(tokens[1]);
+		    
 		    followerIDArrWritable.set(followerIDArr1);
-		    context.write(userID, followerIDArrWritable);
+		    context.write(followerID, followerIDArrWritable);
 		}
 	    }
 	}
@@ -143,7 +142,7 @@ public class Twitterer {
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class);
 	job1.setMapperClass(TokenizerMapper.class);
-	job1.setNumReduceTasks(0);
+	job1.setReducerClass(FollowerReducer.class);
 	job1.setOutputKeyClass(Text.class);
 	job1.setOutputValueClass(TextArrayWritable.class);
 	
