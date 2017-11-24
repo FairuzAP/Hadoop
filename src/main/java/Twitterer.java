@@ -142,7 +142,7 @@ public class Twitterer {
 	job1.setOutputKeyClass(Text.class);
 	job1.setOutputValueClass(TextArrayWritable.class);
 	
-	Path in = new Path(args[0]); Path out = new Path(args[0] + "/1");
+	Path in = new Path(args[0] + "/0"); Path out = new Path(args[0] + "/1");
 	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job1, in);
 	SequenceFileOutputFormat.setOutputPath(job1, out);
