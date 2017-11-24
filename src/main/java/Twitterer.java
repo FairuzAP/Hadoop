@@ -13,13 +13,14 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 
 
 public class Twitterer {
     
     private static class TextArrayWritable extends ArrayWritable {
-
 	public TextArrayWritable(Text[] values) {
 	    super(Text.class, values);
 	}
@@ -28,7 +29,6 @@ public class Twitterer {
 	public Text[] get() {
 	    return (Text[]) super.get();
 	}
-
 	@Override
 	public String toString() {
 	    Text[] values = get();
@@ -41,12 +41,12 @@ public class Twitterer {
      */
     private static class TokenizerMapper extends Mapper<Object, Text, Text, TextArrayWritable>{
 	
-	private final Text user = new Text();
-	private final Text follow = new Text();
+	private final Text userID = new Text();
+	private final Text followerID = new Text();
 	
-	private final Text follower[] = new Text[1];
-	private final Text followerArr[] = new Text[2];
-	private final TextArrayWritable followers = new TextArrayWritable(new Text[0]);
+	private final Text[] followerIDArr1 = new Text[1];
+	private final Text[] followerIDArr2 = new Text[2];
+	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
 
 	@Override
 	public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
@@ -55,19 +55,21 @@ public class Twitterer {
 		String line = lines.nextToken();
 		String[] tokens = line.split("\\s+");
 
-		user.set(tokens[0]);
-		follow.set(tokens[1]);
-		
-		followerArr[0] = user;
-		followerArr[1] = follow;
-		follower[0] = user;
-		
-		followers.set(followerArr);
-		context.write(user, followers);
-		
-		user.set(tokens[1]);
-		followers.set(follower);
-		context.write(user, followers);
+		if(tokens.length == 2) {
+		    userID.set(tokens[0]);
+		    followerID.set(tokens[1]);
+		    
+		    followerIDArr1[0] = userID;
+		    followerIDArr2[0] = userID;
+		    followerIDArr2[1] = followerID;
+
+		    followerIDArrWritable.set(followerIDArr2);
+		    context.write(userID, followerIDArrWritable);
+
+		    userID.set(tokens[1]);
+		    followerIDArrWritable.set(followerIDArr1);
+		    context.write(userID, followerIDArrWritable);
+		}
 	    }
 	}
     }
@@ -77,33 +79,58 @@ public class Twitterer {
      *			{<'A',['B','D']>, <'C',['B','D']>}
      */
     private static class FollowerReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
-	Set<Text> followerSet = new HashSet<>();
-	Set<Text> followedSet = new HashSet<>();
-	private final TextArrayWritable followers = new TextArrayWritable(new Text[0]);
+	Set<Text> followerIDSet = new HashSet<>();
+	Set<Text> userIDSet = new HashSet<>();
+	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
 	
 	@Override
 	public void reduce(Text key, Iterable<TextArrayWritable> values, Context context) throws IOException, InterruptedException {
-	    followerSet.clear();
-	    followedSet.clear();
+	    followerIDSet.clear();
+	    userIDSet.clear();
 	    
 	    for(TextArrayWritable arr : values) {
 		Text[] follower = arr.get();
-		followedSet.add(follower[0]);
+		userIDSet.add(follower[0]);
 		for(int i=1; i<follower.length; i++) {
-		    followerSet.add(follower[i]);
+		    followerIDSet.add(follower[i]);
 		}
 	    }
 	    
-	    Text[] followerArr = followerSet.toArray(new Text[0]);
-	    followers.set(followerArr);
-	    for(Text user : followerSet) {
-		context.write(user, followers);
+	    if(!followerIDSet.isEmpty()) {
+		Text[] followerArr = followerIDSet.toArray(new Text[0]);
+		followerIDArrWritable.set(followerArr);
+		for(Text user : userIDSet) {
+		    context.write(user, followerIDArrWritable);
+		}
 	    }
 	}
     }
-
+    
+    private static class AggregatorReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
+	Set<Text> followerIDSet = new HashSet<>();
+	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
+	
+	@Override
+	public void reduce(Text key, Iterable<TextArrayWritable> values, Context context) throws IOException, InterruptedException {
+	    followerIDSet.clear();
+	    
+	    for(TextArrayWritable arr : values) {
+		Text[] follower = arr.get();
+		for(int i=1; i<follower.length; i++) {
+		    followerIDSet.add(follower[i]);
+		}
+	    }
+	    
+	    if(!followerIDSet.isEmpty()) {
+		Text[] followerArr = followerIDSet.toArray(new Text[0]);
+		followerIDArrWritable.set(followerArr);
+		context.write(key, followerIDArrWritable);
+	    }
+	}
+    }
+    
     public static void main(String[] args) throws Exception {
-	// Job 1
+	// Job 1, TokennizerMapper -> FollowerReducer
 	Configuration conf = new Configuration();
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class);
@@ -112,11 +139,24 @@ public class Twitterer {
 	job1.setOutputKeyClass(Text.class);
 	job1.setOutputValueClass(TextArrayWritable.class);
 	
-	Path in = new Path(args[0]);
-	Path out = new Path(args[1] + "/1");
+	Path in = new Path(args[0]); Path out = new Path(args[0] + "/1");
 	FileInputFormat.addInputPath(job1, in);
-	FileOutputFormat.setOutputPath(job1, out);
+	SequenceFileOutputFormat.setOutputPath(job1, out);
 	job1.waitForCompletion(true);
+	
+	// Jon 2, IdentityMapper -> AggregatorReducer
+	conf = new Configuration();
+	Job job2 = Job.getInstance(conf, "job_2_13514104");
+	job2.setJarByClass(Twitterer.class);
+	job2.setReducerClass(AggregatorReducer.class);
+	job2.setOutputKeyClass(Text.class);
+	job2.setOutputValueClass(TextArrayWritable.class);
+	
+	in = out; out = new Path(args[0] + "/2");
+	SequenceFileInputFormat.addInputPath(job2, in);
+	SequenceFileOutputFormat.setOutputPath(job2, out);
+	job2.waitForCompletion(true);
+	
     }
 }
 
