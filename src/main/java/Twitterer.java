@@ -112,8 +112,8 @@ public class Twitterer {
 	    for(TextArrayWritable arr : values) {
 		Text[] follower = arr.get();
 		userIDSet.add(follower[0]);
-		for(int i=1; i<follower.length; i++) {
-		    followerIDSet.add(follower[i]);
+		if (follower.length == 2) {
+		    followerIDSet.add(follower[1]);
 		}
 	    }
 	    
