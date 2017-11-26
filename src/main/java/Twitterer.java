@@ -3,7 +3,6 @@ import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.PriorityQueue;
-import java.util.Comparator;
 import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -69,17 +68,20 @@ public class Twitterer {
 	private final Text[] followerIDArr1 = new Text[1];
 	private final Text[] followerIDArr2 = new Text[2];
 	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
-
+	
+	private String lineHolder;
+	private String[] tokenHolder;
+	
 	@Override
 	public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
 	    StringTokenizer lines = new StringTokenizer(value.toString(), "\n");
 	    while (lines.hasMoreTokens()) {
-		String line = lines.nextToken();
-		String[] tokens = line.split("\\s+");
+		lineHolder = lines.nextToken();
+		tokenHolder = lineHolder.split("\\s+");
 
-		if(tokens.length == 2) {
-		    userID.set(tokens[0]);
-		    followerID.set(tokens[1]);
+		if(tokenHolder.length == 2) {
+		    userID.set(tokenHolder[0]);
+		    followerID.set(tokenHolder[1]);
 		    
 		    followerIDArr1[0] = userID;
 		    followerIDArr2[0] = userID;
@@ -102,6 +104,7 @@ public class Twitterer {
     public static class FollowerReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
 	Set<Text> followerIDSet = new HashSet<>();
 	Set<Text> userIDSet = new HashSet<>();
+	private Text[] arrayHolder;
 	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
 	
 	@Override
@@ -110,16 +113,16 @@ public class Twitterer {
 	    userIDSet.clear();
 	    
 	    for(TextArrayWritable arr : values) {
-		Text[] follower = arr.get();
-		userIDSet.add(follower[0]);
-		if (follower.length == 2) {
-		    followerIDSet.add(follower[1]);
+		arrayHolder = arr.get();
+		userIDSet.add(arrayHolder[0]);
+		if (arrayHolder.length == 2) {
+		    followerIDSet.add(arrayHolder[1]);
 		}
 	    }
 	    
 	    if(!followerIDSet.isEmpty()) {
-		Text[] followerArr = followerIDSet.toArray(new Text[0]);
-		followerIDArrWritable.set(followerArr);
+		arrayHolder = followerIDSet.toArray(new Text[0]);
+		followerIDArrWritable.set(arrayHolder);
 		for(Text user : userIDSet) {
 		    context.write(user, followerIDArrWritable);
 		}
@@ -134,19 +137,20 @@ public class Twitterer {
     public static class AggregatorReducer extends Reducer<Text, TextArrayWritable, Text, TextArrayWritable> {
 	Set<Text> followerIDSet = new HashSet<>();
 	private final TextArrayWritable followerIDArrWritable = new TextArrayWritable(new Text[0]);
+	private Text[] arrayHolder;
 	
 	@Override
 	public void reduce(Text key, Iterable<TextArrayWritable> values, Context context) throws IOException, InterruptedException {
 	    followerIDSet.clear();
 	    
 	    for(TextArrayWritable arr : values) {
-		Text[] follower = arr.get();
-		followerIDSet.addAll(Arrays.asList(follower));
+		arrayHolder = arr.get();
+		followerIDSet.addAll(Arrays.asList(arrayHolder));
 	    }
 	    
 	    if(!followerIDSet.isEmpty()) {
-		Text[] followerArr = followerIDSet.toArray(new Text[0]);
-		followerIDArrWritable.set(followerArr);
+		arrayHolder = followerIDSet.toArray(new Text[0]);
+		followerIDArrWritable.set(arrayHolder);
 		context.write(key, followerIDArrWritable);
 	    }
 	}
@@ -156,11 +160,12 @@ public class Twitterer {
 	private final Text userID = new Text();
 	private final IntWritable followerCount = new IntWritable();
 	private final PriorityQueue<Tuple<String, Integer>> topUser = new PriorityQueue<>((Tuple<String, Integer> o1, Tuple<String, Integer> o2) -> o1.y.compareTo(o2.y));	
+	private Text[] arrayHolder;
 	
 	@Override
 	public void map(Text key, TextArrayWritable value, Context context) throws IOException, InterruptedException {
-	    Text[] followerIDArr = value.get();
-	    topUser.add(new Tuple<>(key.toString(), followerIDArr.length));
+	    arrayHolder = value.get();
+	    topUser.add(new Tuple<>(key.toString(), arrayHolder.length));
 	    if(topUser.size() > topRetrieved) {
 		topUser.remove();
 	    }
