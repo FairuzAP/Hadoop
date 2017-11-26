@@ -209,7 +209,7 @@ public class Twitterer {
     public static void main(String[] args) throws Exception {
 	
 	// Job 1, TokennizerMapper -> FollowerReducer
-	Configuration conf = new Configuration();
+	Configuration conf = new Configuration(); conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
 	FileSystem hdfs = FileSystem.get(conf);
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class); job1.setMapperClass(TokenizerMapper.class); job1.setReducerClass(FollowerReducer.class);
@@ -221,8 +221,8 @@ public class Twitterer {
 	job1.waitForCompletion(true);
 	
 	// Jon 2, IdentityMapper -> Top10Reducer
-	conf = new Configuration();
-	Job job2 = Job.getInstance(conf, "job_2_13514104");
+	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
+	Job job2 = Job.getInstance(conf, "job_2_13514104"); 
 	job2.setJarByClass(Twitterer.class); job2.setCombinerClass(AggregatorReducer.class); job2.setReducerClass(AggregatorReducer.class);
 	job2.setInputFormatClass(SequenceFileInputFormat.class);
 	job2.setOutputFormatClass(SequenceFileOutputFormat.class); job2.setOutputKeyClass(Text.class); job2.setOutputValueClass(TextArrayWritable.class);
@@ -232,8 +232,10 @@ public class Twitterer {
 	FileInputFormat.addInputPath(job2, in); FileOutputFormat.setOutputPath(job2, out);
 	job2.waitForCompletion(true);
 	
+	if(hdfs.exists(in)) hdfs.delete(in, true);
+	
 	// Job 3, CounterMapper -> Top10Reducer
-	conf = new Configuration();
+	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
 	Job job3 = Job.getInstance(conf, "job_3_13514104");
 	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(Top10Reducer.class);
 	job3.setNumReduceTasks(1);
@@ -245,10 +247,7 @@ public class Twitterer {
 	FileInputFormat.addInputPath(job3, in); FileOutputFormat.setOutputPath(job3, out);
 	job3.waitForCompletion(true);
 	
-	out = new Path(args[1] + "/1");
-	if(hdfs.exists(out)) hdfs.delete(out, true);
-	out = new Path(args[1] + "/2");
-	if(hdfs.exists(out)) hdfs.delete(out, true);
+	if(hdfs.exists(in)) hdfs.delete(in, true);
     }
 }
 
