@@ -218,7 +218,7 @@ public class Twitterer {
 	// Jon 2, IdentityMapper -> Top10Reducer
 	conf = new Configuration();
 	Job job2 = Job.getInstance(conf, "job_2_13514104");
-	job2.setJarByClass(Twitterer.class); job2.setReducerClass(AggregatorReducer.class);
+	job2.setJarByClass(Twitterer.class); job2.setCombinerClass(AggregatorReducer.class); job2.setReducerClass(AggregatorReducer.class);
 	job2.setInputFormatClass(SequenceFileInputFormat.class);
 	job2.setOutputFormatClass(SequenceFileOutputFormat.class); job2.setOutputKeyClass(Text.class); job2.setOutputValueClass(TextArrayWritable.class);
 	
@@ -239,6 +239,11 @@ public class Twitterer {
 	if(hdfs.exists(out)) hdfs.delete(out, true);
 	FileInputFormat.addInputPath(job3, in); FileOutputFormat.setOutputPath(job3, out);
 	job3.waitForCompletion(true);
+	
+	out = new Path(args[1] + "/1");
+	if(hdfs.exists(out)) hdfs.delete(out, true);
+	out = new Path(args[1] + "/2");
+	if(hdfs.exists(out)) hdfs.delete(out, true);
     }
 }
 
