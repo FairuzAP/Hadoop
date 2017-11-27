@@ -209,7 +209,7 @@ public class Twitterer {
     public static void main(String[] args) throws Exception {
 	
 	// Job 1, TokennizerMapper -> FollowerReducer
-	Configuration conf = new Configuration(); conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
+	Configuration conf = new Configuration(); conf.set("mapreduce.map.java.opts", "-Xmx200m"); conf.set("mapreduce.reduce.java.opts", "-Xmx200m");
 	FileSystem hdfs = FileSystem.get(conf);
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class); job1.setMapperClass(TokenizerMapper.class); job1.setReducerClass(FollowerReducer.class);
@@ -221,7 +221,7 @@ public class Twitterer {
 	job1.waitForCompletion(true);
 	
 	// Jon 2, IdentityMapper -> Top10Reducer
-	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
+	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx200m"); conf.set("mapreduce.reduce.java.opts", "-Xmx200m");
 	Job job2 = Job.getInstance(conf, "job_2_13514104"); 
 	job2.setJarByClass(Twitterer.class); job2.setCombinerClass(AggregatorReducer.class); job2.setReducerClass(AggregatorReducer.class);
 	job2.setInputFormatClass(SequenceFileInputFormat.class);
@@ -235,7 +235,7 @@ public class Twitterer {
 	if(hdfs.exists(in)) hdfs.delete(in, true);
 	
 	// Job 3, CounterMapper -> Top10Reducer
-	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx300m"); conf.set("mapreduce.reduce.java.opts", "-Xmx300m");
+	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx200m"); conf.set("mapreduce.reduce.java.opts", "-Xmx200m");
 	Job job3 = Job.getInstance(conf, "job_3_13514104");
 	job3.setJarByClass(Twitterer.class); job3.setMapperClass(CounterMapper.class); job3.setReducerClass(Top10Reducer.class);
 	job3.setNumReduceTasks(1);
