@@ -213,6 +213,7 @@ public class Twitterer {
 	FileSystem hdfs = FileSystem.get(conf);
 	Job job1 = Job.getInstance(conf, "job_1_13514104");
 	job1.setJarByClass(Twitterer.class); job1.setMapperClass(TokenizerMapper.class); job1.setReducerClass(FollowerReducer.class);
+	job1.setNumReduceTasks(16);
 	job1.setOutputFormatClass(SequenceFileOutputFormat.class); job1.setOutputKeyClass(Text.class); job1.setOutputValueClass(TextArrayWritable.class);
 	
 	Path in = new Path(args[0]); Path out = new Path(args[1] + "/1");
@@ -224,6 +225,7 @@ public class Twitterer {
 	conf = new Configuration();  conf.set("mapreduce.map.java.opts", "-Xmx200m"); conf.set("mapreduce.reduce.java.opts", "-Xmx200m");
 	Job job2 = Job.getInstance(conf, "job_2_13514104"); 
 	job2.setJarByClass(Twitterer.class); job2.setCombinerClass(AggregatorReducer.class); job2.setReducerClass(AggregatorReducer.class);
+	job2.setNumReduceTasks(16);
 	job2.setInputFormatClass(SequenceFileInputFormat.class);
 	job2.setOutputFormatClass(SequenceFileOutputFormat.class); job2.setOutputKeyClass(Text.class); job2.setOutputValueClass(TextArrayWritable.class);
 	
